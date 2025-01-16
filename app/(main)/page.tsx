@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,24 +13,27 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// ユーティリティ関数: ゴール期日までの日数を計算
 const calculateDaysUntilGoal = (goalDate: Date | undefined): number => {
-    if (!goalDate) return 1; // ゴール日が未指定なら1日と仮定
+    if (!goalDate) return 1;
     const today = new Date();
     const days = Math.ceil(
-        (goalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (goalDate.getTime() - today.setHours(0, 0, 0, 0)) /
+            (1000 * 60 * 60 * 24)
     );
-    return days < 1 ? 1 : days; // 最小でも1日
+    return Math.max(days, 1);
 };
 
 function MainPage() {
-    const [goalResource, setGoalResource] = useState(0); // 目標コイン数またはガチャ回数
-    const [resourceKind, setResourceKind] = useState<string>("gacha-count"); // 算出対象
-    const [oneTimeResource, setOneTimeResource] = useState(0); // 1回のガチャに必要なコイン数
-    const [goalDate, setGoalDate] = useState<Date | undefined>(new Date()); // 目標期日
-    const [currentResource, setCurrentResource] = useState(0); // 現在のコイン数
+    const [goalResource, setGoalResource] = useState<number>(0);
+    const [resourceKind, setResourceKind] = useState<string>("gacha-count");
+    const [oneTimeResource, setOneTimeResource] = useState<number>(0);
+    const [goalDate, setGoalDate] = useState<Date | undefined>(
+        () => new Date()
+    );
+    const [currentResource, setCurrentResource] = useState<number>(0);
+    const [copySuccess, setCopySuccess] = useState<boolean>(false);
+    const [generatedUrl, setGeneratedUrl] = useState<string>("");
 
-    // 必要なコイン数を計算
     const needResource = useMemo(() => {
         if (resourceKind === "gacha-count") {
             return goalResource * oneTimeResource;
@@ -38,22 +41,58 @@ function MainPage() {
         return goalResource;
     }, [goalResource, oneTimeResource, resourceKind]);
 
-    // ゴール期日までの日数を計算
     const goalDateAlong = useMemo(
         () => calculateDaysUntilGoal(goalDate),
         [goalDate]
     );
 
-    // 1日あたりのノルマを計算
     const oneDayNorma = useMemo(() => {
         const remainingResource = needResource - currentResource;
         return Math.ceil(remainingResource / goalDateAlong);
     }, [needResource, currentResource, goalDateAlong]);
 
-    // 算出対象の切り替え
+    const goalGachaCount = useMemo(() => {
+        if (!needResource || !oneTimeResource) return 0;
+        return Math.floor(needResource / oneTimeResource);
+    }, [needResource, oneTimeResource]);
+
+    const currentGachaCount = useMemo(() => {
+        if (!currentResource || !oneTimeResource) return 0;
+        return Math.floor(currentResource / oneTimeResource);
+    }, [currentResource, oneTimeResource]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams({
+                goalResource: encodeURIComponent(goalResource.toString()),
+                resourceKind: encodeURIComponent(resourceKind),
+                oneTimeResource: encodeURIComponent(oneTimeResource.toString()),
+                goalDate: goalDate
+                    ? encodeURIComponent(goalDate.toISOString())
+                    : "",
+                currentResource: encodeURIComponent(currentResource.toString()),
+            });
+            return setGeneratedUrl(
+                `${window.location.origin}/?${params.toString()}`
+            );
+        }
+    }, [
+        goalResource,
+        resourceKind,
+        oneTimeResource,
+        goalDate,
+        currentResource,
+    ]);
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedUrl);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 3000);
+    };
+
     const changeResourceKind = (kind: string) => {
         setResourceKind(kind);
-        setGoalResource(0); // 目標値をリセット
+        setGoalResource(0);
     };
 
     return (
@@ -63,7 +102,6 @@ function MainPage() {
                     <CardTitle>リソース計算ツール</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* リソース種別 */}
                     <div>
                         <Label>算出対象</Label>
                         <div className="flex space-x-4">
@@ -76,6 +114,11 @@ function MainPage() {
                                             : "outline"
                                     }
                                     onClick={() => changeResourceKind(kind)}
+                                    aria-label={
+                                        kind === "gacha-count"
+                                            ? "ガチャ回数を設定"
+                                            : "コイン数を設定"
+                                    }
                                 >
                                     {kind === "gacha-count"
                                         ? "ガチャ回数"
@@ -85,7 +128,6 @@ function MainPage() {
                         </div>
                     </div>
 
-                    {/* 目標値入力 */}
                     <div>
                         <Label>
                             {resourceKind === "gacha-count"
@@ -94,15 +136,17 @@ function MainPage() {
                         </Label>
                         <Input
                             type="number"
+                            min="0"
                             placeholder="0"
                             value={goalResource}
                             onChange={(e) =>
-                                setGoalResource(Number(e.target.value) || 0)
+                                setGoalResource(
+                                    Math.max(Number(e.target.value) || 0, 0)
+                                )
                             }
                         />
                     </div>
 
-                    {/* 日付選択 */}
                     <div>
                         <Label>目標の年月日</Label>
                         <Popover>
@@ -129,15 +173,17 @@ function MainPage() {
                         </Popover>
                     </div>
 
-                    {/* その他入力項目 */}
                     <div>
                         <Label>一回のガチャに必要なコイン数</Label>
                         <Input
                             type="number"
+                            min="0"
                             placeholder="100"
                             value={oneTimeResource}
                             onChange={(e) =>
-                                setOneTimeResource(Number(e.target.value) || 0)
+                                setOneTimeResource(
+                                    Math.max(Number(e.target.value) || 0, 0)
+                                )
                             }
                         />
                     </div>
@@ -145,16 +191,18 @@ function MainPage() {
                         <Label>現在のコイン数</Label>
                         <Input
                             type="number"
+                            min="0"
                             value={currentResource}
                             onChange={(e) =>
-                                setCurrentResource(Number(e.target.value) || 0)
+                                setCurrentResource(
+                                    Math.max(Number(e.target.value) || 0, 0)
+                                )
                             }
                         />
                     </div>
                 </CardContent>
             </Card>
 
-            {/* 結果表示 */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Card>
                     <CardHeader>
@@ -180,7 +228,30 @@ function MainPage() {
                         <p>{oneDayNorma.toLocaleString()}</p>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>ガチャ回数</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>現在: {currentGachaCount} 回</p>
+                        <p>目標達成時: {goalGachaCount} 回</p>
+                    </CardContent>
+                </Card>
             </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>共有用URL</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Input readOnly value={generatedUrl} />
+                    <Button onClick={copyToClipboard}>URLをコピー</Button>
+                    {copySuccess && (
+                        <p className="text-green-500">
+                            URLがコピーされました！
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }
