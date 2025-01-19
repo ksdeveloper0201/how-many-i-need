@@ -27,9 +27,8 @@ function MainPage() {
     const [goalResource, setGoalResource] = useState<number>(0);
     const [resourceKind, setResourceKind] = useState<string>("gacha-count");
     const [oneTimeResource, setOneTimeResource] = useState<number>(0);
-    const [goalDate, setGoalDate] = useState<Date | undefined>(
-        () => new Date()
-    );
+    const [goalDate, setGoalDate] = useState<Date | undefined>(new Date());
+
     const [currentResource, setCurrentResource] = useState<number>(0);
     const [copySuccess, setCopySuccess] = useState<boolean>(false);
     const [generatedUrl, setGeneratedUrl] = useState<string>("");
@@ -62,20 +61,16 @@ function MainPage() {
     }, [currentResource, oneTimeResource]);
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const params = new URLSearchParams({
-                goalResource: encodeURIComponent(goalResource.toString()),
-                resourceKind: encodeURIComponent(resourceKind),
-                oneTimeResource: encodeURIComponent(oneTimeResource.toString()),
-                goalDate: goalDate
-                    ? encodeURIComponent(goalDate.toISOString())
-                    : "",
-                currentResource: encodeURIComponent(currentResource.toString()),
-            });
-            return setGeneratedUrl(
-                `${window.location.origin}/?${params.toString()}`
-            );
-        }
+        const params = new URLSearchParams({
+            goalResource: encodeURIComponent(goalResource.toString()),
+            resourceKind: encodeURIComponent(resourceKind),
+            oneTimeResource: encodeURIComponent(oneTimeResource.toString()),
+            goalDate: goalDate
+                ? encodeURIComponent(goalDate.toISOString())
+                : "",
+            currentResource: encodeURIComponent(currentResource.toString()),
+        });
+        setGeneratedUrl(`${window.location.origin}/?${params.toString()}`);
     }, [
         goalResource,
         resourceKind,
@@ -83,6 +78,21 @@ function MainPage() {
         goalDate,
         currentResource,
     ]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            setGoalResource(parseInt(params.get("goalResource") ?? "0"));
+            setResourceKind(params.get("resourceKind") ?? "gacha-count");
+            setOneTimeResource(parseInt(params.get("oneTimeResource") ?? "0"));
+            setGoalDate(
+                params.get("goalDate")
+                    ? new Date(decodeURIComponent(params.get("goalDate")!))
+                    : new Date()
+            );
+            setCurrentResource(parseInt(params.get("currentResource") ?? "0"));
+        }
+    }, []);
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(generatedUrl);
