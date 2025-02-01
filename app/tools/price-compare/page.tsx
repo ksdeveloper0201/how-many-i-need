@@ -5,8 +5,20 @@ import { useState } from "react";
 
 function PriceComparePage() {
     const [products, setProducts] = useState<ProductType[]>([
-        { id: 1, label: "商品A", description: "商品情報", price: 0, mount: 0 },
-        { id: 2, label: "商品B", description: "商品情報", price: 0, mount: 0 },
+        {
+            id: 1,
+            label: "商品A",
+            description: "商品情報",
+            price: "",
+            mount: "",
+        },
+        {
+            id: 2,
+            label: "商品B",
+            description: "商品情報",
+            price: "",
+            mount: "",
+        },
     ]);
 
     const updateProduct = (
@@ -24,7 +36,9 @@ function PriceComparePage() {
 
     const pricePerUnit = products.map((product) => {
         if (!product.mount || !product.price) return 0;
-        return product.mount > 0 ? product.price / product.mount : 0;
+        return parseInt(product.mount) > 0
+            ? parseInt(product.price) / parseInt(product.mount)
+            : 0;
     });
 
     const priceDifference = Math.abs(pricePerUnit[0] - pricePerUnit[1]).toFixed(

@@ -17,7 +17,7 @@ function ProductCard({ product, onUpdate }: ProductCardProp) {
 
     const pricePerMount = useMemo(() => {
         if (!product.price || !product.mount) return 0;
-        return product.price / product.mount;
+        return parseInt(product.price) / parseInt(product.mount);
     }, [product.price, product.mount]);
 
     return (
@@ -65,20 +65,20 @@ function ProductCard({ product, onUpdate }: ProductCardProp) {
                     <div>
                         <Label>金額</Label>
                         <Input
-                            type="number"
-                            value={product.price || 0}
+                            type="text"
+                            value={product.price || ""}
                             onChange={(e) =>
-                                onUpdate({ price: parseInt(e.target.value) })
+                                onUpdate({ price: e.target.value })
                             }
                         />
                     </div>
                     <div>
                         <Label>内容量</Label>
                         <Input
-                            type="number"
-                            value={product.mount || 0}
+                            type="text"
+                            value={product.mount || ""}
                             onChange={(e) =>
-                                onUpdate({ mount: parseInt(e.target.value) })
+                                onUpdate({ mount: e.target.value })
                             }
                         />
                     </div>
