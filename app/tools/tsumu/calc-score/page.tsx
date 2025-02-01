@@ -4,22 +4,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 function CalcScore() {
     const [score, setScore] = useState<string>("");
     const [magScore, setMagScore] = useState<string>("");
     const [currentScore, setCurrentScore] = useState<string>("");
+    const [scoreKind, setScoreKind] = useState<string>("score");
 
     // 現在の倍率
     const magnification = useMemo(() => {
         if (!magScore || !score) return 0;
-        return parseInt(magScore) / parseInt(score);
-    }, [score, magScore]);
+        const intScore = parseInt(score);
+        const intMagScore = parseInt(magScore);
+        if (scoreKind === "score") {
+            return intMagScore / intScore;
+        } else if (scoreKind === "sumScore") {
+            return intMagScore / (intScore - intMagScore);
+        }
+    }, [score, magScore, scoreKind]);
 
     const resultScore = useMemo(() => {
         if (!currentScore || !magnification) return "-";
         const cScore = parseInt(currentScore);
-        return Math.ceil(cScore + cScore * magnification);
+        return Math.floor(cScore + cScore * magnification);
     }, [magnification, currentScore]);
 
     return (
@@ -36,7 +44,28 @@ function CalcScore() {
                             <p>スコア倍率計算</p>
                             <p className="text-xs">スコア結果を各項目に入力</p>
                             <div>
-                                <Label>スコア</Label>
+                                <div className="flex mb-2">
+                                    {["score", "sumScore"].map((kind) => {
+                                        return (
+                                            <Button
+                                                key={kind}
+                                                className="font-bold rounded-none text-xs size-auto"
+                                                variant={
+                                                    scoreKind === kind
+                                                        ? "default"
+                                                        : "outline"
+                                                }
+                                                onClick={() =>
+                                                    setScoreKind(kind)
+                                                }
+                                            >
+                                                {kind === "score"
+                                                    ? "スコア(プレイ画面)"
+                                                    : "スコア(リザルト)"}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
                                 <Input
                                     type="text"
                                     value={score}
@@ -65,16 +94,24 @@ function CalcScore() {
                     <CardHeader>
                         <CardTitle>スコア検証</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-col flex gap-3">
                         <div>
                             <Label>現在のスコア</Label>
-                            <Input
-                                type="text"
-                                value={currentScore}
-                                onChange={(e) =>
-                                    setCurrentScore(e.target.value)
-                                }
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    type="text"
+                                    value={currentScore}
+                                    onChange={(e) =>
+                                        setCurrentScore(e.target.value)
+                                    }
+                                />
+                                <Button
+                                    className="font-bold "
+                                    onClick={() => setCurrentScore("")}
+                                >
+                                    クリア
+                                </Button>
+                            </div>
                         </div>
                         <div>
                             <p>倍率加算後のスコア</p>
