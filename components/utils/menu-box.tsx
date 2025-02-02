@@ -10,9 +10,37 @@ import {
     DrawerTitle,
     DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "../ui/button";
+import Link from "next/link";
+import { menuList } from "@/config/menu-list";
 
 const MenuBox: React.FC<{ className?: string }> = ({ className }) => {
+    const MenuList: React.FC<{ redirectList: redirectObj[] }> = ({
+        redirectList,
+    }) => {
+        return (
+            <div className="flex flex-col items-center gap-2">
+                {redirectList.map((redirect) => {
+                    return (
+                        <DrawerClose asChild key={redirect.id}>
+                            <Link
+                                href={redirect.url}
+                                className="text-blue-500 hover:underline"
+                            >
+                                {redirect.label}
+                            </Link>
+                        </DrawerClose>
+                    );
+                })}
+            </div>
+        );
+    };
     return (
         <div
             className={cn(
@@ -27,15 +55,51 @@ const MenuBox: React.FC<{ className?: string }> = ({ className }) => {
                 </DrawerTrigger>
                 <DrawerContent>
                     <DrawerHeader>
-                        <DrawerTitle>Are you absolutely sure?</DrawerTitle>
+                        <DrawerTitle>ツール一覧</DrawerTitle>
                         <DrawerDescription>
-                            This action cannot be undone.
+                            other tools can use
                         </DrawerDescription>
                     </DrawerHeader>
+                    {menuList.map((menuObj) => {
+                        if (menuObj.chunkLabel !== "other") {
+                            return (
+                                <>
+                                    <Accordion
+                                        key={menuObj.chunkId}
+                                        type="single"
+                                        collapsible
+                                        className="w-full"
+                                    >
+                                        <AccordionItem
+                                            value={menuObj.chunkLabel}
+                                        >
+                                            <AccordionTrigger className="flex flex-col items-center">
+                                                {menuObj.chunkLabel}
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <MenuList
+                                                    redirectList={
+                                                        menuObj.redirectList
+                                                    }
+                                                />
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+                                </>
+                            );
+                        } else {
+                            return (
+                                <>
+                                    <MenuList
+                                        redirectList={menuObj.redirectList}
+                                    />
+                                </>
+                            );
+                        }
+                    })}
                     <DrawerFooter>
-                        <Button>Submit</Button>
-                        <DrawerClose>
-                            <Button variant="outline">Cancel</Button>
+                        <DrawerClose asChild>
+                            <Button>close</Button>
                         </DrawerClose>
                     </DrawerFooter>
                 </DrawerContent>
