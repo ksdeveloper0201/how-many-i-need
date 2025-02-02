@@ -97,9 +97,11 @@ const MenuBox: React.FC<{ className?: string }> = ({ className }) => {
                             );
                         }
                     })}
-                    <DrawerFooter>
+                    <DrawerFooter className="flex flex-col items-center">
                         <DrawerClose asChild>
-                            <Button>close</Button>
+                            <Button className="w-96" variant="default">
+                                close
+                            </Button>
                         </DrawerClose>
                     </DrawerFooter>
                 </DrawerContent>
